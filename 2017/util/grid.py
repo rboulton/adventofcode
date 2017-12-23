@@ -15,6 +15,10 @@ class TiledGrid(object):
         self.minty = None
         self.maxtx = None
         self.maxty = None
+        self.minx = None
+        self.miny = None
+        self.maxx = None
+        self.maxy = None
 
     def __repr__(self):
         return "<TiledGrid(tile_size=%r, default=%r, tile_count=%r, mintx=%r, minty=%r, maxtx=%r, maxty=%r)>" % (
@@ -99,8 +103,19 @@ class TiledGrid(object):
         xs, ys = key
         if isinstance(xs, slice) or isinstance(ys, slice):
             raise ValueError("Assigning to slices not yet supported")
+
         tile = self._ensure_tile(xs, ys)
         tile[ys % self.tile_size][xs % self.tile_size] = val
+        if self.minx is None:
+            self.minx = xs
+            self.maxx = xs
+            self.miny = ys
+            self.maxy = ys
+        else:
+            self.minx = min(xs, self.minx)
+            self.maxx = max(xs, self.maxx)
+            self.miny = min(ys, self.miny)
+            self.maxy = max(ys, self.maxy)
 
     def _get(self, x, y):
         tile = self._check_tile(x, y)
@@ -144,7 +159,7 @@ class TiledGrid(object):
         )
 
     def flipped(self):
-        return 
+        return
 
 
 class GridVector(object):
@@ -154,6 +169,12 @@ class GridVector(object):
 
     def __repr__(self):
         return "GridVector(%r, %r)" % (self.x, self.y)
+
+    def __add__(self, other):
+        return GridVector(self.x + other.x, self.y + other.y)
+
+    def __mul(self, factor):
+        return GridVector(self.x + factor, self.y + factor)
 
     def rotated_90_clockwise(self):
         return GridVector(self.y, -self.x)
