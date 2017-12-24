@@ -11,28 +11,24 @@ class TiledGrid(object):
         self.tile_size = tile_size
         self.default = default 
         self.tiles = {}
-        self.mintx = None
-        self.minty = None
-        self.maxtx = None
-        self.maxty = None
         self.minx = None
         self.miny = None
         self.maxx = None
         self.maxy = None
 
     def __repr__(self):
-        return "<TiledGrid(tile_size=%r, default=%r, tile_count=%r, mintx=%r, minty=%r, maxtx=%r, maxty=%r)>" % (
+        return "<TiledGrid(tile_size=%r, default=%r, tile_count=%r, minx=%r, miny=%r, maxx=%r, maxy=%r)>" % (
             self.tile_size,
             self.default,
             len(self.tiles),
-            self.mintx,
-            self.minty, 
-            self.maxtx,
-            self.maxty,
+            self.minx,
+            self.miny, 
+            self.maxx,
+            self.maxy,
         )
 
     def as_rows(self, rowfn=None, itemfn=None):
-        if self.mintx is None:
+        if self.minx is None:
             return []
         if rowfn is None:
             rowfn = lambda row: row
@@ -41,9 +37,9 @@ class TiledGrid(object):
         return [
             rowfn([
                 itemfn(self[x, y])
-                for x in range(self.mintx * self.tile_size, (self.maxtx + 1) * self.tile_size)
+                for x in range(self.minx, self.maxx + 1)
             ])
-            for y in range((self.maxty + 1) * self.tile_size - 1, (self.minty * self.tile_size) - 1, -1)
+            for y in range(self.maxy, self.miny - 1, -1)
         ]
 
     def _check_tile(self, x, y):
@@ -62,16 +58,6 @@ class TiledGrid(object):
                 for _ in xrange(self.tile_size)
             ]
             self.tiles[key] = tile
-            if self.mintx is None:
-                self.mintx = tx
-                self.maxtx = tx
-                self.minty = ty
-                self.maxty = ty
-            else:
-                self.mintx = min(tx, self.mintx)
-                self.maxtx = max(tx, self.maxtx)
-                self.minty = min(ty, self.minty)
-                self.maxty = max(ty, self.maxty)
         return tile
 
     def __getitem__(self, key):
@@ -153,9 +139,13 @@ class TiledGrid(object):
         ], default)
 
     def show(self):
-        return self.as_rows(
-            rowfn=lambda row: ''.join(row),
-            itemfn=lambda val: str(val),
+        return dict(
+            minx=self.minx,
+            maxy=self.maxy,
+            data=self.as_rows(
+                rowfn=lambda row: ''.join(row),
+                itemfn=lambda val: str(val),
+            )
         )
 
     def flipped(self):
