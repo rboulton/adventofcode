@@ -1,0 +1,35 @@
+input = '''
+Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
+Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
+Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1
+Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83
+Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
+Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
+'''
+
+input = open('2023/input4.txt', 'r').read()
+
+def parse(card):
+    a, b = card.strip().split(':')
+    card_num = int(a[5:])
+    a, b = b.split('|')
+    win_nums = [int(v) for v in a.strip().split()]
+    nums = [int(v) for v in b.strip().split()]
+    return card_num, win_nums, nums
+
+card_matches = []
+for card in input.strip().split('\n'):
+    card_num, win_nums, nums = parse(card)
+    matches = len(set(win_nums).intersection(nums))
+    card_matches.append(matches)
+
+card_nums = [1] * len(card_matches)
+print(card_matches)
+for i, matches in enumerate(card_matches):
+    copies = card_nums[i]
+    print("{} copies of card {} with {} matches".format(copies, i + 1, matches))
+    for j in range(1, matches + 1):
+        try:
+            card_nums[i+j] += copies
+        except IndexError: pass
+print(sum(card_nums))
