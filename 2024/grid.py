@@ -30,6 +30,9 @@ class Coord:
     def __lt__(self, other):
         return ((self.y, self.x) < (other.y, other.x))
 
+    def rotate_right(self):
+        return Coord(-self.y, self.x)
+
 
 class Grid:
     def __init__(self, rows, convert=None):
@@ -50,7 +53,7 @@ class Grid:
 
     def clear(self, v):
         '''Set all cells to either v if v is an int, string or None, or v()'''
-        if isinstance(v, int) or isinstance(v, str) or isinstance(v, None):
+        if isinstance(v, int) or isinstance(v, str) or v is None:
             v2 = v
             v = lambda: v2
         rows = []
@@ -96,32 +99,66 @@ class Grid:
     def unique_contents(self):
         return set(v for row in self.rows for v in row)
 
-    def findall(self, v):
+    def coords(self, filter=None):
+        """Get all coordinates, optionally matching a filter """
+        if filter is None:
+            filter = lambda _: True
         for y in range(self.height):
             for x in range(self.width):
-                if self.get(x, y) == v:
+                if filter(self.get(x, y)):
                     yield Coord(x, y)
+
+    def findall(self, v):
+        """Find all coordinates containing v"""
+        for c in self.coords(lambda val: val == v):
+            yield c
 
     def find(self, v):
-        for x in range(self.width):
-            for y in range(self.height):
-                if self.get(x, y) == v:
-                    yield Coord(x, y)
+        """Find the first coordinate containing v"""
+        for c in self.coords(lambda val: val == v):
+            return c
 
-    def cartesian_neighbours(self, x_or_coord, y=None):
+    def cartesian_neighbours(self, x_or_coord, y=None, include_out_of_bounds=False):
         if isinstance(x_or_coord, Coord):
             assert y is None
             x, y = x_or_coord.x, x_or_coord.y
         else:
             x, y = x_or_coord, y
-        r = [
+        if include_out_of_bounds:
+            bounds_check = lambda a, b: True
+        else:
+            bounds_check = lambda a, b: a >= 0 and b >= 0 and a < self.width and b < self.height
+        return [
             Coord(a, b)
             for (a, b) in ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
-            if a >= 0 and b >= 0 and a < self.width and b < self.height
+            if bounds_check(a, b)
         ]
-        return r
+
+    def connected_same(self, x_or_coord, y=None):
+        if isinstance(x_or_coord, Coord):
+            assert y is None
+            start = x_or_coord
+        else:
+            start = Coord(x_or_coord, y)
+        result = set((start,))
+        start_val = self.get(start)
+        stack = [start]
+        while len(stack) > 0:
+            pos = stack.pop()
+            for n in self.cartesian_neighbours(pos):
+                if self.get(n) != start_val:
+                    continue
+                if n not in result:
+                    stack.append(n)
+                result.add(n)
+        return result
 
     def __str__(self):
-        return '\n'.join(''.join(row) for row in self.rows)
+        return '\n'.join(''.join(str(ch) for ch in row) for row in self.rows)
 
-
+    def rotate_right(self):
+        rows = []
+        for x in range(self.width):
+            row = [self.get(x, y) for y in reversed(range(self.height))]
+            rows.append(row)
+        return Grid(rows)
