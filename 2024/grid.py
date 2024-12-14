@@ -35,9 +35,11 @@ class Coord:
 
 
 class Grid:
-    def __init__(self, rows, convert=None):
+    def __init__(self, rows=None, convert=None, width=None, height=None):
         if convert is None:
             convert = lambda x: x
+        if rows is None:
+            rows = [[None] * width] * height
         self.rows = [
             [convert(ch) for ch in row]
             for row in rows
