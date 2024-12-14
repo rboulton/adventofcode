@@ -155,6 +155,22 @@ class Grid:
                 result.add(n)
         return result
 
+    def connected_regions(self, exclude=None):
+        if exclude is None:
+            exclude = lambda v: v == None
+        seen = set()
+        result = []
+        for x in range(self.width):
+            for y in range(self.height):
+                if exclude(self.get(x, y)):
+                    continue
+                if Coord(x, y) in seen:
+                    continue
+                region = self.connected_same(x, y)
+                result.append(region)
+                seen.update(region)
+        return result
+
     def __str__(self):
         return '\n'.join(''.join(str(ch) for ch in row) for row in self.rows)
 
