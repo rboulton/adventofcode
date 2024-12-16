@@ -136,6 +136,31 @@ class Grid:
             if bounds_check(a, b)
         ]
 
+    def all_neighbours(self, x_or_coord, y=None, include_out_of_bounds=False):
+        if isinstance(x_or_coord, Coord):
+            assert y is None
+            x, y = x_or_coord.x, x_or_coord.y
+        else:
+            x, y = x_or_coord, y
+        if include_out_of_bounds:
+            bounds_check = lambda a, b: True
+        else:
+            bounds_check = lambda a, b: a >= 0 and b >= 0 and a < self.width and b < self.height
+        return [
+            Coord(a, b)
+            for (a, b) in (
+                (x - 1, y - 1),
+                (x, y - 1),
+                (x + 1, y - 1),
+                (x + 1, y),
+                (x + 1, y + 1),
+                (x, y + 1),
+                (x - 1, y + 1),
+                (x - 1, y),
+            )
+            if bounds_check(a, b)
+        ]
+
     def connected_same(self, x_or_coord, y=None):
         if isinstance(x_or_coord, Coord):
             assert y is None
