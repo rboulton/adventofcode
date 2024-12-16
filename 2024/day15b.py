@@ -51,6 +51,18 @@ data_ = '''
 <vv<<^^<<^^
 '''
 
+data_ = '''
+#######
+#.....#
+#.OOO.#
+#..OO@#
+#..O..#
+#.....#
+#######
+
+<v<v<<^
+'''
+
 data = open(os.path.join(os.path.dirname(__file__), "input15.txt")).read()
 data = data.strip()
 data = data.replace('#', '##').replace('O', '[]').replace('.', '..').replace('@', '@.')
@@ -61,7 +73,6 @@ print(g)
 print(moves)
 
 robot = g.find('@')
-g.set(robot, '.')
 
 dirs = {
     '^': Coord(0, -1),
@@ -70,62 +81,71 @@ dirs = {
     'v': Coord(0, 1),
 }
 
-def push(pos, d):
+def find_moves(pos, d):
+    r = (set(), set())
     if d.y == 0:
-        assert g.get(pos) == '.'
         p = pos + d
-        while g.get(p) in ('[', ']'):
-            p = p + d
-        if g.get(p) != '.':
-            return False
-        while p != pos:
-            np = p - d
-            g2.set(p, g.get(np))
-            p = np
-        return True
+        v = g.get(p)
+        if v == '#':
+            return None
+        if v == '.':
+            r[0].add((p, g.get(pos)))
+            r[1].add(pos)
+            return r
+        assert v in ('[', ']'), v
+        r = find_moves(p, d)
+        if r is None:
+            return None
+        r[0].add((p, g.get(pos)))
+        r[1].add(pos)
+        return r
 
-    # print(f"Testing push {pos} {d}")
+    else:
+        p = pos + d
+        v = g.get(p)
+        if v == '#':
+            return None
+        if v == '.':
+            r[0].add((p, g.get(pos)))
+            r[1].add(pos)
+            return r
+        assert v in ('[', ']'), v
+        r1 = find_moves(p, d)
+        if v == '[':
+            r2 = find_moves(p + Coord(1, 0), d)
+        else:
+            r2 = find_moves(p + Coord(-1, 0), d)
+        if r1 is None or r2 is None:
+            return None
+        r1[0].update(r2[0])
+        r1[1].update(r2[1])
+        r1[0].add((p, g.get(pos)))
+        r1[1].add(pos)
+        return r1
 
-    p = pos + d
-    v = g.get(p)
-    if v == '#':
+def push(pos, d):
+    # print(f"find_moves({pos}, {d})")
+    moves = find_moves(pos, d)
+    if moves is None:
+        # print("no moves")
         return False
-    if v =='[':
-        if not (push(p, d) and push(p + Coord(1, 0), d)):
-            return False
-        p2 = p + d
-        g2.set(p2, g.get(p))
-        g2.set(p2 + Coord(1, 0), g.get(p + Coord(1, 0)))
-        g2.set(p, '.')
-        g2.set(p + Coord(1, 0), '.')
-        return True
-    if v ==']':
-        if not (push(p, d) and push(p + Coord(-1, 0), d)):
-            return False
-        p2 = p + d
-        g2.set(p2, g.get(p))
-        g2.set(p2 + Coord(-1, 0), g.get(p + Coord(-1, 0)))
-        g2.set(p, '.')
-        g2.set(p + Coord(-1, 0), '.')
-        return True
-    assert v == '.'
+    # print(f"moves = {moves[0]} {moves[1]}")
+    for p in moves[1]:
+        g.set(p, '.')
+    for p, v in moves[0]:
+        g.set(p, v)
     return True
-
 
 for move in moves:
     d = dirs.get(move)
     if d is None:
         continue
 
-    # assert g.get(robot) == '.'
-    # g.set(robot, '@')
     # print(g)
     # print(robot, d)
-    # g.set(robot, '.')
 
-    g2 = copy.deepcopy(g)
     if push(robot, d):
         robot = robot + d
-        g = g2
+
 print(g)
 print(sum(c.x + c.y*100 for c in g.findall('[')))
