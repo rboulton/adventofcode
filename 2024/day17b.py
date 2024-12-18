@@ -23,10 +23,49 @@ class Computer:
         self.pc = 0
         self.out = []
 
+    def asm(self):
+        out = []
+        for pc in range(0, len(self.program), 2):
+            opcode = self.program[pc]
+            operand = self.program[pc + 1]
+            if opcode in (0, 2, 5, 6, 7):
+                combo = self.asm_combo_operand(operand)
+            else:
+                combo = None
+
+            if opcode == 0:
+                out.append(f'a = a >> {combo}')
+            elif opcode == 1:
+                out.append(f'b = (b ^ {operand}) % 8')
+            elif opcode == 2:
+                out.append(f'b = {combo} % 8')
+            elif opcode == 3:
+                out.append(f'if a != 0: pc = {operand}')
+            elif opcode == 4:
+                out.append(f'b = b ^ c')
+            elif opcode == 5:
+                out.append(f'out({combo} % 8)')
+            elif opcode == 6:
+                out.append(f'b = a >> {combo}')
+            elif opcode == 7:
+                out.append(f'c = a >> {combo}')
+        return out
+
+    def asm_combo_operand(self, operand):
+        if operand <= 3:
+            return str(operand)
+        if operand == 4:
+            return 'a'
+        if operand == 5:
+            return 'b'
+        if operand == 6:
+            return 'c'
+        assert False, operand
+
     def run(self):
         while self.pc < len(self.program) - 1:
             self.do()
-        return ','.join(self.out)
+        return self.out
 
     def do(self):
         opcode = self.program[self.pc]
@@ -45,7 +84,7 @@ class Computer:
         elif opcode == 4:
             self.b = self.b ^ self.c
         elif opcode == 5:
-            self.out.append(str(self.combo_operand(operand) % 8))
+            self.out.append(self.combo_operand(operand) % 8)
         elif opcode == 6:
             combo = self.combo_operand(operand)
             self.b = self.a // (2 ** combo)
@@ -71,9 +110,32 @@ c = int(data[2].split()[-1])
 program_str = data[4].split()[-1]
 program = tuple(map(int, program_str.split(',')))
 
-for a in range(10000000):
-    c = Computer(a, b, c, program)
-    o = c.run()
-    if o == program_str:
-        print(a)
-        break
+computer = Computer(a, b, c, program)
+steps = computer.asm()
+print('\n'.join(steps))
+
+possible_a = set()
+for a in range(2**10):
+    computer = Computer(a, b, c, program)
+    r = computer.run()
+    if r[0] == program[0]:
+        possible_a.add(a)
+        #print(repr(a), repr(r[0]), repr(program[0]))
+#print(tuple(bin(a) for a in possible_a))
+
+pos = 1
+while pos < len(program):
+    next_possible = set()
+    for a1 in possible_a:
+        for a2 in range(8):
+            a = a1 + (a2 << (pos * 3 + 7))
+            #print(bin(a), bin(a1), bin(a2))
+            computer = Computer(a, b, c, program)
+            r = computer.run()
+            #print('pos', pos, r[:pos + 1], program[:pos + 1])
+            if len(r) > pos and r[pos] == program[pos]:
+                next_possible.add(a)
+                #print(repr(a), repr(r[:pos+1]), repr(program[:pos+1]))
+    pos += 1
+    possible_a = next_possible
+    print(min(next_possible))
